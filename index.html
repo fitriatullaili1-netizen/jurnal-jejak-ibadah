@@ -1,1 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <title>Jurnal Jejak Ibadah</title>
+
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f5f7fa;
+      padding: 15px;
+    }
+
+    h2 {
+      margin-bottom: 5px;
+    }
+
+    select {
+      width: 90%;
+      max-width: 400px;
+      padding: 12px;
+      font-size: 17px;
+      margin: 15px;
+      border-radius: 8px;
+    }
+
+    #reader {
+      width: 100%;
+      max-width: 450px;
+      margin: auto;
+    }
+
+    #hasil {
+      margin: 15px auto;
+      padding: 15px;
+      max-width: 400px;
+      background: white;
+      border-radius: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h2>📖 JURNAL JEJAK IBADAH</h2>
+  <p>Scan QR Code Santri</p>
+
+  <select id="sholat">
+    <option value="DHUHA">DHUHA</option>
+    <option value="DHUHUR">DHUHUR</option>
+  </select>
+
+  <div id="reader"></div>
+
+  <div id="hasil">
+    Kamera sedang disiapkan...
+  </div>
+
+<script>
+
+  /*
+   * NANTI URL APPS SCRIPT KITA MASUKKAN DI SINI
+   */
+  const SCRIPT_URL = "MASUKKAN_URL_WEB_APP_DI_SINI";
+
+  let sedangScan = false;
+
+  function berhasilScan(id) {
+
+    if (sedangScan) return;
+
+    sedangScan = true;
+
+    id = id.trim();
+
+    const sholat = document.getElementById("sholat").value;
+
+    document.getElementById("hasil").innerHTML =
+      "⏳ Memproses " + id + "...";
+
+    const callbackName =
+      "hasil_" + Date.now();
+
+    window[callbackName] = function(data) {
+
+      if (data.status === "success") {
+
+        document.getElementById("hasil").innerHTML =
+          "✅ " + data.message;
+
+      } else {
+
+        document.getElementById("hasil").innerHTML =
+          "⚠️ " + data.message;
+      }
+
+      delete window[callbackName];
+
+      setTimeout(function() {
+        sedangScan = false;
+      }, 1500);
+    };
+
+    const script = document.createElement("script");
+
+    script.src =
+      SCRIPT_URL +
+      "?id=" + encodeURIComponent(id) +
+      "&sholat=" + encodeURIComponent(sholat) +
+      "&callback=" + callbackName;
+
+    document.body.appendChild(script);
+
+  }
+
+
+  function gagalScan(error) {
+    // Tidak menampilkan error selama kamera mencari QR
+  }
+
+
+  const scanner = new Html5Qrcode("reader");
+
+  scanner.start(
+
+    {
+      facingMode: "environment"
+    },
+
+    {
+      fps: 10,
+      qrbox: {
+        width: 250,
+        height: 250
+      }
+    },
+
+    berhasilScan,
+    gagalScan
+
+  ).catch(function(error) {
+
+    document.getElementById("hasil").innerHTML =
+      "❌ Kamera tidak bisa dibuka.<br><br>" +
+      "Pastikan kamera diizinkan oleh browser.";
+
+  });
+
+</script>
+
+</body>
+</html>
