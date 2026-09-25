@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Jurnal Jejak Ibadah</title>
 
-  <script src="https://script.google.com/macros/s/AKfycbzl6HpiOivIDXCoQPs90YldopHHRgpZ2s3-4pAcHLNv-jmOfDSGi09YTBtdPaDneaHPiQ/exec"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
     body {
@@ -48,7 +47,7 @@
 
 <body>
 
-  <h2>📖 JURNAL JEJAK IBADAH</h2>
+  <h2>JURNAL JEJAK IBADAH</h2>
   <p>Scan QR Code Santri</p>
 
   <select id="sholat">
@@ -62,97 +61,99 @@
     Kamera sedang disiapkan...
   </div>
 
-<script>
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzl6HpiOivIDXCoQPs90YldopHHRgpZ2s3-4pAcHLNv-jmOfDSGi09YTBtdPaDneaHPiQ/exec";
 
-  /*
-   * NANTI URL APPS SCRIPT KITA MASUKKAN DI SINI
-   */
-  const SCRIPT_URL = "MASUKKAN_URL_WEB_APP_DI_SINI";
+    let sedangScan = false;
 
-  let sedangScan = false;
+    function berhasilScan(id) {
 
-  function berhasilScan(id) {
+      if (sedangScan) return;
 
-    if (sedangScan) return;
+      sedangScan = true;
+      id = id.trim();
 
-    sedangScan = true;
+      const sholat = document.getElementById("sholat").value;
 
-    id = id.trim();
+      document.getElementById("hasil").innerHTML =
+        "Memproses " + id + "...";
 
-    const sholat = document.getElementById("sholat").value;
+      const callbackName = "hasil_" + Date.now();
 
-    document.getElementById("hasil").innerHTML =
-      "⏳ Memproses " + id + "...";
+      window[callbackName] = function(data) {
 
-    const callbackName =
-      "hasil_" + Date.now();
+        if (data.sukses === true) {
 
-    window[callbackName] = function(data) {
+          document.getElementById("hasil").innerHTML =
+            "Berhasil: " + data.pesan;
 
-      if (data.status === "success") {
+        } else {
+
+          document.getElementById("hasil").innerHTML =
+            "Gagal: " + data.pesan;
+        }
+
+        delete window[callbackName];
+
+        setTimeout(function() {
+          sedangScan = false;
+        }, 1500);
+      };
+
+      const script = document.createElement("script");
+
+      script.src =
+        SCRIPT_URL +
+        "?id=" + encodeURIComponent(id) +
+        "&sholat=" + encodeURIComponent(sholat) +
+        "&callback=" + callbackName;
+
+      script.onerror = function() {
 
         document.getElementById("hasil").innerHTML =
-          "✅ " + data.message;
+          "Tidak dapat terhubung ke Google Sheet.";
 
-      } else {
-
-        document.getElementById("hasil").innerHTML =
-          "⚠️ " + data.message;
-      }
-
-      delete window[callbackName];
-
-      setTimeout(function() {
+        delete window[callbackName];
         sedangScan = false;
-      }, 1500);
-    };
+      };
 
-    const script = document.createElement("script");
+      document.body.appendChild(script);
+    }
 
-    script.src =
-      SCRIPT_URL +
-      "?id=" + encodeURIComponent(id) +
-      "&sholat=" + encodeURIComponent(sholat) +
-      "&callback=" + callbackName;
+    function gagalScan(error) {
+    }
 
-    document.body.appendChild(script);
+    const scanner = new Html5Qrcode("reader");
 
-  }
+    scanner.start(
 
+      {
+        facingMode: "environment"
+      },
 
-  function gagalScan(error) {
-    // Tidak menampilkan error selama kamera mencari QR
-  }
+      {
+        fps: 10,
+        qrbox: {
+          width: 250,
+          height: 250
+        }
+      },
 
+      berhasilScan,
+      gagalScan
 
-  const scanner = new Html5Qrcode("reader");
+    ).then(function() {
 
-  scanner.start(
+      document.getElementById("hasil").innerHTML =
+        "Kamera siap. Arahkan ke QR santri.";
 
-    {
-      facingMode: "environment"
-    },
+    }).catch(function(error) {
 
-    {
-      fps: 10,
-      qrbox: {
-        width: 250,
-        height: 250
-      }
-    },
+      document.getElementById("hasil").innerHTML =
+        "Kamera tidak bisa dibuka. Pastikan izin kamera diberikan.";
 
-    berhasilScan,
-    gagalScan
-
-  ).catch(function(error) {
-
-    document.getElementById("hasil").innerHTML =
-      "❌ Kamera tidak bisa dibuka.<br><br>" +
-      "Pastikan kamera diizinkan oleh browser.";
-
-  });
-
-</script>
+    });
+  </script>
 
 </body>
 </html>
