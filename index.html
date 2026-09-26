@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -34,6 +34,7 @@
       border-radius: 8px;
       border: 1px solid #ccc;
       display: block;
+      background: white;
     }
 
     button {
@@ -71,6 +72,14 @@
       min-height: 20px;
       line-height: 1.6;
     }
+
+    .berhasil {
+      color: #198754;
+    }
+
+    .gagal {
+      color: #dc3545;
+    }
   </style>
 </head>
 
@@ -102,118 +111,201 @@
 
   <script>
 
+    /* =====================================================
+       URL GOOGLE APPS SCRIPT
+       ===================================================== */
+
     const SCRIPT_URL =
-      "https://script.google.com/macros/s/AKfycby7QLnTMiKPmGd6irdYazWhShWlkuvmR42zj_UlO0ltYT7KqYgY-4BJx0JOllwSY5KrA/exec";
+      "https://script.google.com/macros/s/AKfycby7QLnTMiKPmGd6irdYazWhShWlkuvmR42zj_UlO0ltYTk7KqYgY-4BJx0JOllwSY5KrA/exec";
+
 
     let scanner = null;
     let sedangScan = false;
     let kameraAktif = false;
 
 
-    // =========================
-    // MULAI SCAN
-    // =========================
+    /* =====================================================
+       MULAI KAMERA
+       ===================================================== */
 
     async function mulaiScan() {
 
-      if (kameraAktif) return;
+      if (kameraAktif) {
+        return;
+      }
 
       document.getElementById("hasil").innerHTML =
-        "Meminta izin kamera...";
+        "⏳ Meminta izin kamera...";
 
       try {
 
         scanner = new Html5Qrcode("reader");
 
         await scanner.start(
+
           {
             facingMode: "environment"
           },
+
           {
             fps: 10,
+
             qrbox: {
               width: 250,
               height: 250
             }
+
           },
+
           berhasilScan,
+
           gagalScan
+
         );
+
 
         kameraAktif = true;
 
         document.getElementById("mulai").style.display = "none";
+
         document.getElementById("berhenti").style.display = "block";
 
         document.getElementById("hasil").innerHTML =
-          "Kamera siap.<br>Arahkan ke QR santri.";
+          "📷 Kamera siap.<br>Arahkan ke QR santri.";
+
 
       } catch (error) {
 
-        console.log(error);
+        console.log("ERROR KAMERA:", error);
 
         document.getElementById("hasil").innerHTML =
-          "Kamera tidak bisa dibuka.<br><br>" +
+          "❌ Kamera tidak bisa dibuka.<br><br>" +
           "Pastikan izin kamera sudah diberikan.";
 
         kameraAktif = false;
+
       }
+
     }
 
 
-    // =========================
-    // BERHASIL SCAN QR
-    // =========================
+    /* =====================================================
+       QR BERHASIL DIBACA
+       ===================================================== */
 
     function berhasilScan(id) {
 
-      if (sedangScan) return;
+      if (sedangScan) {
+        return;
+      }
 
       sedangScan = true;
 
-      id = id.trim();
+      id = String(id).trim();
+
 
       const sholat =
         document.getElementById("sholat").value;
 
+
       document.getElementById("hasil").innerHTML =
-        "⏳ Memproses ID " + id + "...";
+        "⏳ Memproses ID <b>" +
+        id +
+        "</b>...";
 
 
-      // Nama callback
-      const callbackName = "hasilGoogleSheet";
+      /* =================================================
+         NAMA CALLBACK
+         ================================================= */
+
+      const callbackName =
+        "hasil_" + Date.now();
 
 
-      // Menerima jawaban dari Google Apps Script
+      /* =================================================
+         FUNGSI MENERIMA JAWABAN DARI GOOGLE SHEETS
+         ================================================= */
+
       window[callbackName] = function(data) {
 
         console.log(
-          "HASIL DARI GOOGLE SHEET:",
+          "Jawaban Google Apps Script:",
           data
         );
 
 
-        if (data.sukses === true) {
+        if (data && data.sukses === true) {
 
           document.getElementById("hasil").innerHTML =
-            "✅ PRESENSI BERHASIL<br><br>" +
-            "<b>" + data.nama + "</b><br>" +
-            "ID: " + data.id + "<br>" +
-            "Kelas: " + data.kelas + "<br>" +
-            "Ibadah: " + data.sholat + "<br>" +
-            "Tanggal: " + data.tanggal + "<br>" +
-            "Jam: " + data.jam;
+            "<div class='berhasil'>" +
+
+            "✅ PRESENSI BERHASIL" +
+
+            "<br><br>" +
+
+            "<b>" +
+            data.nama +
+            "</b>" +
+
+            "<br>" +
+
+            "ID: " +
+            data.id +
+
+            "<br>" +
+
+            "Kelas: " +
+            data.kelas +
+
+            "<br>" +
+
+            "Ibadah: " +
+            data.sholat +
+
+            "<br>" +
+
+            "Tanggal: " +
+            data.tanggal +
+
+            "<br>" +
+
+            "Jam: " +
+            data.jam +
+
+            "</div>";
+
 
         } else {
 
           document.getElementById("hasil").innerHTML =
-            "❌ PRESENSI GAGAL<br><br>" +
-            data.pesan;
+            "<div class='gagal'>" +
+
+            "❌ PRESENSI GAGAL" +
+
+            "<br><br>" +
+
+            (
+              data && data.pesan
+              ? data.pesan
+              : "Jawaban dari Google Sheet tidak valid."
+            ) +
+
+            "</div>";
 
         }
 
 
-        // Siap scan berikutnya
+        /* Hapus callback */
+
+        try {
+          delete window[callbackName];
+        } catch (e) {
+          console.log(e);
+        }
+
+
+        /* Tunggu sebelum scan berikutnya */
+
         setTimeout(function() {
 
           sedangScan = false;
@@ -226,34 +318,74 @@
       };
 
 
-      // =========================
-      // KIRIM KE GOOGLE SHEET
-      // =========================
+      /* =================================================
+         MEMBUAT SCRIPT REQUEST
+         ================================================= */
 
       const script =
         document.createElement("script");
 
 
-      script.src =
+      const url =
         SCRIPT_URL +
+
         "?id=" +
         encodeURIComponent(id) +
+
         "&sholat=" +
         encodeURIComponent(sholat) +
+
         "&callback=" +
-        callbackName +
-        "&waktu=" +
+        encodeURIComponent(callbackName) +
+
+        "&t=" +
         Date.now();
 
 
-      // Jika gagal terhubung
-      script.onerror = function() {
+      console.log(
+        "Mengirim ke Google Apps Script:",
+        url
+      );
+
+
+      script.src = url;
+
+
+      /* =================================================
+         JIKA GAGAL TERHUBUNG
+         ================================================= */
+
+      script.onerror = function(error) {
+
+        console.log(
+          "Gagal menghubungi Google Apps Script:",
+          error
+        );
+
 
         document.getElementById("hasil").innerHTML =
-          "❌ Gagal menghubungi Google Sheet.<br><br>" +
-          "ID: " + id;
+          "<div class='gagal'>" +
 
-        delete window[callbackName];
+          "❌ GAGAL TERHUBUNG KE GOOGLE SHEET" +
+
+          "<br><br>" +
+
+          "ID: " +
+          id +
+
+          "<br><br>" +
+
+          "Periksa koneksi internet dan Deployment Apps Script."
+
+          + "</div>";
+
+
+        try {
+          delete window[callbackName];
+        } catch (e) {
+          console.log(e);
+        }
+
 
         sedangScan = false;
 
@@ -262,25 +394,68 @@
 
       document.body.appendChild(script);
 
+
+      /* =================================================
+         BATAS WAKTU
+         Jika 10 detik tidak ada jawaban
+         ================================================= */
+
+      setTimeout(function() {
+
+        if (window[callbackName]) {
+
+          document.getElementById("hasil").innerHTML =
+            "<div class='gagal'>" +
+
+            "❌ GOOGLE SHEET TIDAK MEMBERIKAN JAWABAN." +
+
+            "<br><br>" +
+
+            "Silakan periksa koneksi internet."
+
+            + "</div>";
+
+
+          try {
+            delete window[callbackName];
+          } catch (e) {
+            console.log(e);
+          }
+
+
+          sedangScan = false;
+
+        }
+
+      }, 10000);
+
     }
 
 
-    // =========================
-    // GAGAL MEMBACA QR
-    // =========================
+    /* =====================================================
+       ERROR SCAN QR
+       ===================================================== */
 
     function gagalScan(error) {
-      // Tidak menampilkan pesan error
+
+      /*
+       Tidak menampilkan error
+       karena kamera akan terus mencari QR.
+      */
+
     }
 
 
-    // =========================
-    // BERHENTI SCAN
-    // =========================
+    /* =====================================================
+       BERHENTI KAMERA
+       ===================================================== */
 
     async function berhentiScan() {
 
-      if (!scanner || !kameraAktif) return;
+      if (!scanner || !kameraAktif) {
+        return;
+      }
+
 
       try {
 
@@ -290,15 +465,26 @@
 
       } catch (error) {
 
-        console.log(error);
+        console.log(
+          "Error menghentikan kamera:",
+          error
+        );
 
       }
 
 
       kameraAktif = false;
 
-      document.getElementById("mulai").style.display = "block";
-      document.getElementById("berhenti").style.display = "none";
+      sedangScan = false;
+
+
+      document.getElementById("mulai").style.display =
+        "block";
+
+
+      document.getElementById("berhenti").style.display =
+        "none";
+
 
       document.getElementById("hasil").innerHTML =
         "Kamera dihentikan.<br>" +
