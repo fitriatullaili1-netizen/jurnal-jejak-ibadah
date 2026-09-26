@@ -137,7 +137,6 @@
         kameraAktif = true;
 
         document.getElementById("mulai").style.display = "none";
-
         document.getElementById("berhenti").style.display = "block";
 
         document.getElementById("hasil").innerHTML =
@@ -152,9 +151,7 @@
           "Pastikan izin kamera sudah diberikan.";
 
         kameraAktif = false;
-
       }
-
     }
 
 
@@ -170,7 +167,7 @@
         document.getElementById("sholat").value;
 
       document.getElementById("hasil").innerHTML =
-        "Memproses " + id + "...";
+        "⏳ Memproses " + id + "...";
 
 
       const callbackName =
@@ -182,13 +179,19 @@
         if (data.sukses === true) {
 
           document.getElementById("hasil").innerHTML =
-            "Berhasil: " + data.pesan;
+            "✅ PRESENSI BERHASIL<br><br>" +
+            "<b>" + data.nama + "</b><br>" +
+            "ID: " + data.id + "<br>" +
+            "Kelas: " + data.kelas + "<br>" +
+            "Ibadah: " + data.sholat + "<br>" +
+            "Tanggal: " + data.tanggal + "<br>" +
+            "Jam: " + data.jam;
 
         } else {
 
           document.getElementById("hasil").innerHTML =
-            "Gagal: " + data.pesan;
-
+            "❌ PRESENSI GAGAL<br><br>" +
+            data.pesan;
         }
 
 
@@ -200,9 +203,9 @@
           sedangScan = false;
 
           document.getElementById("hasil").innerHTML =
-            "Silakan scan QR santri berikutnya.";
+            "📷 Silakan scan QR santri berikutnya.";
 
-        }, 1500);
+        }, 2500);
 
       };
 
@@ -224,7 +227,8 @@
       script.onerror = function() {
 
         document.getElementById("hasil").innerHTML =
-          "Tidak dapat terhubung ke Google Sheet.";
+          "❌ Tidak dapat menerima jawaban dari Google Sheet.<br><br>" +
+          "Silakan coba scan lagi.";
 
         delete window[callbackName];
 
@@ -263,7 +267,6 @@
       kameraAktif = false;
 
       document.getElementById("mulai").style.display = "block";
-
       document.getElementById("berhenti").style.display = "none";
 
       document.getElementById("hasil").innerHTML =
