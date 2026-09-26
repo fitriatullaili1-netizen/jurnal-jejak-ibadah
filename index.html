@@ -99,15 +99,20 @@
     Tekan MULAI SCAN untuk menggunakan kamera.
   </div>
 
+
   <script>
 
     const SCRIPT_URL =
-      "https://script.google.com/macros/s/AKfycby7QLnTMiKPmGd6irdYazWhShWlkuvmR42zj_UlO0ltYTk7KqYgY-4BJx0JOllwSY5KrA/exec";
+      "https://script.google.com/macros/s/AKfycby7QLnTMiKPmGd6irdYazWhShWlkuvmR42zj_UlO0ltYT7KqYgY-4BJx0JOllwSY5KrA/exec";
 
     let scanner = null;
     let sedangScan = false;
     let kameraAktif = false;
 
+
+    // =========================
+    // MULAI SCAN
+    // =========================
 
     async function mulaiScan() {
 
@@ -156,107 +161,102 @@
     }
 
 
+    // =========================
+    // BERHASIL SCAN QR
+    // =========================
+
     function berhasilScan(id) {
 
- function berhasilScan(id) {
+      if (sedangScan) return;
 
-  if (sedangScan) return;
+      sedangScan = true;
 
-  sedangScan = true;
+      id = id.trim();
 
-  id = id.trim();
-
-  const sholat =
-    document.getElementById("sholat").value;
-
-  document.getElementById("hasil").innerHTML =
-    "⏳ Memproses ID " + id + "...";
-
-
-  // Nama callback tetap
-  const callbackName = "hasilGoogleSheet";
-
-
-  // Fungsi menerima jawaban dari Google Apps Script
-  window[callbackName] = function(data) {
-
-    console.log("HASIL DARI GOOGLE SHEET:", data);
-
-
-    if (data.sukses === true) {
+      const sholat =
+        document.getElementById("sholat").value;
 
       document.getElementById("hasil").innerHTML =
-        "✅ PRESENSI BERHASIL<br><br>" +
-        "<b>" + data.nama + "</b><br>" +
-        "ID: " + data.id + "<br>" +
-        "Kelas: " + data.kelas + "<br>" +
-        "Ibadah: " + data.sholat + "<br>" +
-        "Tanggal: " + data.tanggal + "<br>" +
-        "Jam: " + data.jam;
-
-    } else {
-
-      document.getElementById("hasil").innerHTML =
-        "❌ PRESENSI GAGAL<br><br>" +
-        data.pesan;
-
-    }
+        "⏳ Memproses ID " + id + "...";
 
 
-    // Siap scan berikutnya
-    setTimeout(function() {
-
-      sedangScan = false;
-
-      document.getElementById("hasil").innerHTML =
-        "📷 Silakan scan QR santri berikutnya.";
-
-    }, 2500);
-
-  };
+      // Nama callback
+      const callbackName = "hasilGoogleSheet";
 
 
-  // Kirim data ke Google Apps Script
-  const script =
-    document.createElement("script");
+      // Menerima jawaban dari Google Apps Script
+      window[callbackName] = function(data) {
 
-  script.src =
-    SCRIPT_URL +
-    "?id=" +
-    encodeURIComponent(id) +
-    "&sholat=" +
-    encodeURIComponent(sholat) +
-    "&callback=" +
-    callbackName +
-    "&waktu=" +
-    Date.now();
+        console.log(
+          "HASIL DARI GOOGLE SHEET:",
+          data
+        );
 
 
-  // Jika gagal
-  script.onerror = function() {
+        if (data.sukses === true) {
 
-    document.getElementById("hasil").innerHTML =
-      "❌ Gagal menghubungi Google Sheet.<br><br>" +
-      "ID: " + id;
+          document.getElementById("hasil").innerHTML =
+            "✅ PRESENSI BERHASIL<br><br>" +
+            "<b>" + data.nama + "</b><br>" +
+            "ID: " + data.id + "<br>" +
+            "Kelas: " + data.kelas + "<br>" +
+            "Ibadah: " + data.sholat + "<br>" +
+            "Tanggal: " + data.tanggal + "<br>" +
+            "Jam: " + data.jam;
 
-    sedangScan = false;
+        } else {
 
-  };
+          document.getElementById("hasil").innerHTML =
+            "❌ PRESENSI GAGAL<br><br>" +
+            data.pesan;
+
+        }
 
 
-  document.body.appendChild(script);
+        // Siap scan berikutnya
+        setTimeout(function() {
 
-}
+          sedangScan = false;
 
+          document.getElementById("hasil").innerHTML =
+            "📷 Silakan scan QR santri berikutnya.";
+
+        }, 2500);
+
+      };
+
+
+      // =========================
+      // KIRIM KE GOOGLE SHEET
+      // =========================
+
+      const script =
+        document.createElement("script");
+
+
+      script.src =
+        SCRIPT_URL +
+        "?id=" +
+        encodeURIComponent(id) +
+        "&sholat=" +
+        encodeURIComponent(sholat) +
+        "&callback=" +
+        callbackName +
+        "&waktu=" +
+        Date.now();
+
+
+      // Jika gagal terhubung
       script.onerror = function() {
 
         document.getElementById("hasil").innerHTML =
-          "❌ Tidak dapat menerima jawaban dari Google Sheet.<br><br>" +
+          "❌ Gagal menghubungi Google Sheet.<br><br>" +
           "ID: " + id;
 
         delete window[callbackName];
 
         sedangScan = false;
+
       };
 
 
@@ -265,10 +265,18 @@
     }
 
 
+    // =========================
+    // GAGAL MEMBACA QR
+    // =========================
+
     function gagalScan(error) {
-      // Tidak menampilkan pesan error scan
+      // Tidak menampilkan pesan error
     }
 
+
+    // =========================
+    // BERHENTI SCAN
+    // =========================
 
     async function berhentiScan() {
 
