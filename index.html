@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>JEJAK IBADAH SANTRI</title>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
@@ -13,10 +14,15 @@
       text-align: center;
       background: #f5f7fa;
       padding: 15px;
+      margin: 0;
     }
 
     h2 {
       margin-bottom: 5px;
+    }
+
+    p {
+      margin-top: 5px;
     }
 
     select {
@@ -24,14 +30,35 @@
       max-width: 400px;
       padding: 12px;
       font-size: 17px;
-      margin: 15px;
+      margin: 15px auto;
       border-radius: 8px;
+      border: 1px solid #ccc;
+      display: block;
+    }
+
+    button {
+      width: 90%;
+      max-width: 400px;
+      padding: 14px;
+      font-size: 18px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 10px auto;
+      background: #198754;
+      color: white;
+    }
+
+    #berhenti {
+      background: #dc3545;
+      display: none;
     }
 
     #reader {
       width: 100%;
       max-width: 450px;
-      margin: auto;
+      margin: 15px auto;
     }
 
     #hasil {
@@ -41,6 +68,7 @@
       background: white;
       border-radius: 10px;
       font-weight: bold;
+      min-height: 20px;
     }
   </style>
 </head>
@@ -48,6 +76,7 @@
 <body>
 
   <h2>JEJAK IBADAH SANTRI</h2>
+
   <p>Scan QR Code Santri</p>
 
   <select id="sholat">
@@ -55,30 +84,98 @@
     <option value="DHUHUR">DHUHUR</option>
   </select>
 
+  <button id="mulai" onclick="mulaiScan()">
+    📷 MULAI SCAN
+  </button>
+
+  <button id="berhenti" onclick="berhentiScan()">
+    ⛔ BERHENTI
+  </button>
+
   <div id="reader"></div>
 
   <div id="hasil">
-    Kamera sedang disiapkan...
+    Tekan MULAI SCAN untuk menggunakan kamera.
   </div>
 
   <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzl6HpiOivIDXCoQPs90YldopHHRgpZ2s3-4pAcHLNv-jmOfDSGi09YTBtdPaDneaHPiQ/exec";
 
+    const SCRIPT_URL =
+      "https://script.google.com/macros/s/AKfycbzl6HpiOivIDXCoQPs90YldopHHRgpZ2s3-4pAcHLNv-jmOfDSGi09YTBtdPaDneaHPiQ/exec";
+
+    let scanner = null;
     let sedangScan = false;
+    let kameraAktif = false;
+
+
+    async function mulaiScan() {
+
+      if (kameraAktif) return;
+
+      document.getElementById("hasil").innerHTML =
+        "Meminta izin kamera...";
+
+      try {
+
+        scanner = new Html5Qrcode("reader");
+
+        await scanner.start(
+          {
+            facingMode: "environment"
+          },
+          {
+            fps: 10,
+            qrbox: {
+              width: 250,
+              height: 250
+            }
+          },
+          berhasilScan,
+          gagalScan
+        );
+
+        kameraAktif = true;
+
+        document.getElementById("mulai").style.display = "none";
+
+        document.getElementById("berhenti").style.display = "block";
+
+        document.getElementById("hasil").innerHTML =
+          "Kamera siap.<br>Arahkan ke QR santri.";
+
+      } catch (error) {
+
+        console.log(error);
+
+        document.getElementById("hasil").innerHTML =
+          "Kamera tidak bisa dibuka.<br><br>" +
+          "Pastikan izin kamera sudah diberikan.";
+
+        kameraAktif = false;
+
+      }
+
+    }
+
 
     function berhasilScan(id) {
 
       if (sedangScan) return;
 
       sedangScan = true;
+
       id = id.trim();
 
-      const sholat = document.getElementById("sholat").value;
+      const sholat =
+        document.getElementById("sholat").value;
 
       document.getElementById("hasil").innerHTML =
         "Memproses " + id + "...";
 
-      const callbackName = "hasil_" + Date.now();
+
+      const callbackName =
+        "hasil_" + Date.now();
+
 
       window[callbackName] = function(data) {
 
@@ -91,22 +188,38 @@
 
           document.getElementById("hasil").innerHTML =
             "Gagal: " + data.pesan;
+
         }
+
 
         delete window[callbackName];
 
+
         setTimeout(function() {
+
           sedangScan = false;
+
+          document.getElementById("hasil").innerHTML =
+            "Silakan scan QR santri berikutnya.";
+
         }, 1500);
+
       };
 
-      const script = document.createElement("script");
+
+      const script =
+        document.createElement("script");
+
 
       script.src =
         SCRIPT_URL +
-        "?id=" + encodeURIComponent(id) +
-        "&sholat=" + encodeURIComponent(sholat) +
-        "&callback=" + callbackName;
+        "?id=" +
+        encodeURIComponent(id) +
+        "&sholat=" +
+        encodeURIComponent(sholat) +
+        "&callback=" +
+        callbackName;
+
 
       script.onerror = function() {
 
@@ -114,45 +227,51 @@
           "Tidak dapat terhubung ke Google Sheet.";
 
         delete window[callbackName];
+
         sedangScan = false;
+
       };
 
+
       document.body.appendChild(script);
+
     }
+
 
     function gagalScan(error) {
+      // Tidak menampilkan pesan error scan
     }
 
-    const scanner = new Html5Qrcode("reader");
 
-    scanner.start(
+    async function berhentiScan() {
 
-      {
-        facingMode: "environment"
-      },
+      if (!scanner || !kameraAktif) return;
 
-      {
-        fps: 10,
-        qrbox: {
-          width: 250,
-          height: 250
-        }
-      },
+      try {
 
-      berhasilScan,
-      gagalScan
+        await scanner.stop();
 
-    ).then(function() {
+        await scanner.clear();
 
-      document.getElementById("hasil").innerHTML =
-        "Kamera siap. Arahkan ke QR santri.";
+      } catch (error) {
 
-    }).catch(function(error) {
+        console.log(error);
+
+      }
+
+
+      kameraAktif = false;
+
+      document.getElementById("mulai").style.display = "block";
+
+      document.getElementById("berhenti").style.display = "none";
 
       document.getElementById("hasil").innerHTML =
-        "Kamera tidak bisa dibuka. Pastikan izin kamera diberikan.";
+        "Kamera dihentikan.<br>" +
+        "Tekan MULAI SCAN untuk menggunakan kamera lagi.";
 
-    });
+    }
+
   </script>
 
 </body>
